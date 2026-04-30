@@ -1,0 +1,16 @@
+{
+  "name": "web_scraping",
+  "module": "index.ts",
+  "type": "module",
+  "private": true,
+  "devDependencies": {
+    "@types/bun": "latest"
+  },
+  "peerDependencies": {
+    "typescript": "^5"
+  },
+  "dependencies": {
+    "axios": "^1.15.2",
+    "cheerio": "^1.2.0"
+  }
+}
