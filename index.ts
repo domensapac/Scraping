@@ -59,9 +59,6 @@ async function scrapeData(){
     }
 }
 
-
-scrapeData();
-
 function printRefNumbers(data : any[]){
     for(let element of data){
         console.log(element);
@@ -75,3 +72,11 @@ async function insertData(data : any[]){
         .insert({ ref_number : element}); 
     }
 }
+
+async function loadData(){
+    const { data, error } = await supabase.from('my_table').select('*'); 
+    return data; 
+}
+
+scrapeData();
+
