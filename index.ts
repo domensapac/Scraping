@@ -24,16 +24,27 @@ export const supabase = createClient(supabaseUrl, supabaseKey);
 
 
 async function scrapeData(){
+        console.log("1. Začenjam...");
+
     var mainUrl = "https://www.nepremicnine.net/oglasi-oddaja/podravska/maribor/mb-center,maribor,za-kalvarijo,koroska-vrata/stanovanje/1-sobno,15-sobno,2-sobno,garsonjera/cena-do-500-eur-na-mesec/?nadst%5B0%5D=vsa&nadst%5B1%5D=vsa"; 
-    var options = {
+    
+    const browser = await chromium.launch({ headless: true });
+    const context = await browser.newContext({
+        userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36'
+    });
+    const page = await context.newPage();
+    console.log("2. Browser odprt");
+
+    /*var options = {
         headers: {
             'User-Agent': 'Mozilla/5.0 (iPad; CPU OS 11_0 like Mac OS X) AppleWebKit/604.1.34 (KHTML, like Gecko) Version/11.0 Mobile/15A5341f Safari/604.1',
             'Accept': 'application/json'
         }}
-
+    */
     try{
-        const wholeData = await axios.get(mainUrl, options); 
-        const $ = cheerio.load(wholeData.data); 
+        await page.goto(mainUrl, { waitUntil: 'networkidle' });
+        const wholeData = await page.content();
+        const $ = cheerio.load(wholeData); 
 
         let elementUrls : string[] = []; // URLJI VSEH OGLASOV 
 
@@ -45,8 +56,11 @@ async function scrapeData(){
 
         let responses = []; // HTML KODA VSAKEGA POSAMEZNEGA OGLASA
         for(let url of elementUrls){
-            const result = await axios.get(url, options); 
-            responses.push(result.data); 
+            await page.goto(url, { waitUntil: 'networkidle'}); 
+            await page.waitForTimeout(500 + Math.random() * 2000);
+
+            const result = await page.content(); 
+            responses.push(result); 
         }
         
         let singleData = []; // TU IMAS VSE OGLASE; SHRANIS V OBJEKTE
@@ -96,13 +110,15 @@ async function scrapeData(){
         console.log("Novih oglasov: ", newData.length); 
 
         if(newData.length > 0){
-            insertData(newData); // VSE NOVE VSTAVIS V BAZO
-            sendMail(newData); 
+            await insertData(newData); // VSE NOVE VSTAVIS V BAZO
+            await sendMail(newData); 
         }
             
         
     }catch(error){
         console.log("Error:", error); 
+    }finally {
+        await browser.close(); 
     }
 }
 
@@ -137,7 +153,7 @@ async function sendMail(data : any[]){
     }
 
     const mailOptions = {
-        from: '"Nepremičnine.net Scraper" domen.sapac420@gmail.com>',
+        from: '"Nepremičnine.net Scraper" <domen.sapac420@gmail.com>',
         to: 'domen.sapac10@gmail.com',
         subject: 'Nov oglas!',
         html : htmlString
