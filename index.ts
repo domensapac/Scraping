@@ -1,9 +1,10 @@
-import axios from "axios";
 import * as cheerio from "cheerio";
-import { chromium } from 'playwright';
 import { createClient } from '@supabase/supabase-js'
 import nodemailer from "nodemailer";
+import { chromium } from 'playwright-extra';
+const stealth = require('puppeteer-extra-plugin-stealth')();
 
+chromium.use(stealth);
 const supabaseUrl = process.env.SUPABASE_URL!
 const supabaseKey = process.env.SUPABASE_ANON_KEY!
 const mailPass = process.env.NODEMAILER_PASS!
@@ -18,31 +19,23 @@ const transporter = nodemailer.createTransport({
 
 console.log("Prebran URL:", process.env.SUPABASE_URL);
 
-
 export const supabase = createClient(supabaseUrl, supabaseKey); 
 
 
 
 async function scrapeData(){
-        console.log("1. Začenjam...");
-
     var mainUrl = "https://www.nepremicnine.net/oglasi-oddaja/podravska/maribor/mb-center,maribor,za-kalvarijo,koroska-vrata/stanovanje/1-sobno,15-sobno,2-sobno,garsonjera/cena-do-500-eur-na-mesec/?nadst%5B0%5D=vsa&nadst%5B1%5D=vsa"; 
     
-    const browser = await chromium.launch({ headless: true });
-    const context = await browser.newContext({
-        userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36'
+    //const browser = await chromium.launch({ headless: true });
+    const context = await chromium.launchPersistentContext('./browser-data', {
+        headless: true, // Drži na false, dokler ne deluje 100%
+        
     });
-    const page = await context.newPage();
-    console.log("2. Browser odprt");
 
-    /*var options = {
-        headers: {
-            'User-Agent': 'Mozilla/5.0 (iPad; CPU OS 11_0 like Mac OS X) AppleWebKit/604.1.34 (KHTML, like Gecko) Version/11.0 Mobile/15A5341f Safari/604.1',
-            'Accept': 'application/json'
-        }}
-    */
+    const page = await context.newPage();
+
     try{
-        await page.goto(mainUrl, { waitUntil: 'networkidle' });
+        await page.goto(mainUrl, { waitUntil: 'load', timeout: 60000 });
         const wholeData = await page.content();
         const $ = cheerio.load(wholeData); 
 
@@ -52,12 +45,18 @@ async function scrapeData(){
             let elementUrl = $(element).find('meta[itemprop="mainEntityOfPage"]').attr('content'); 
             if(elementUrl)
                 elementUrls.push(elementUrl);
+
         })
 
         let responses = []; // HTML KODA VSAKEGA POSAMEZNEGA OGLASA
         for(let url of elementUrls){
-            await page.goto(url, { waitUntil: 'networkidle'}); 
-            await page.waitForTimeout(500 + Math.random() * 2000);
+            await page.goto(url, { waitUntil: 'load', timeout: 60000 }); 
+
+            
+            const title = await page.title();
+            if (title.includes("Just a moment")) {
+                await page.waitForTimeout(30000); 
+            }
 
             const result = await page.content(); 
             responses.push(result); 
@@ -87,7 +86,6 @@ async function scrapeData(){
         }
     
         const fetchedData = await loadData(); 
-        console.log(fetchedData); 
 
         let newData = []; 
 
@@ -118,7 +116,8 @@ async function scrapeData(){
     }catch(error){
         console.log("Error:", error); 
     }finally {
-        await browser.close(); 
+        await context.close(); 
+        transporter.close();
     }
 }
 
