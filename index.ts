@@ -17,19 +17,13 @@ const transporter = nodemailer.createTransport({
     }
 });
 
-console.log("Prebran URL:", process.env.SUPABASE_URL);
-
 export const supabase = createClient(supabaseUrl, supabaseKey); 
-
-
 
 async function scrapeData(){
     var mainUrl = "https://www.nepremicnine.net/oglasi-oddaja/podravska/maribor/mb-center,maribor,za-kalvarijo,koroska-vrata/stanovanje/1-sobno,15-sobno,2-sobno,garsonjera/cena-do-500-eur-na-mesec/?nadst%5B0%5D=vsa&nadst%5B1%5D=vsa"; 
     
-    //const browser = await chromium.launch({ headless: true });
     const context = await chromium.launchPersistentContext('./browser-data', {
-        headless: true, // Drži na false, dokler ne deluje 100%
-        
+        headless: true, 
     });
 
     const page = await context.newPage();
@@ -70,14 +64,14 @@ async function scrapeData(){
             let objTitle = $("div.single-title").find('h1').text(); 
             let objDescription = $("div.desc-box").find('p:first').text(); 
             let objPrice = $("div.cena").find('span').text(); 
-            let objImage = $("div.galerija-container").find('img').attr('src'); ; 
+            let objImageUrls : string[] = $("div.galerija-container").find('img').map((i, el) => $(el).attr('src')).get() ; 
 
             let singleObject = {
                 ref_number : objRefNumber,
                 title : objTitle,
                 description : objDescription,
                 price : objPrice,
-                imageUrl : objImage,
+                imageUrls : objImageUrls,
                 link : elementUrls[i]
             }
             
@@ -139,22 +133,32 @@ async function loadData(){
 }
 
 async function sendMail(data : any[]){
-    let htmlString = '<h2>NAJDENI NOVI OGLASI !</h2>'; 
+    let htmlString = '<h2> NOVI OGLASI: !</h2>'; 
+    
 
     for(let element of data){
-        htmlString+= `  <h3> ${element.title} </h3>
+        let imageString = '';
+        for(let el of element.imageUrls){
+            imageString += `<img style='height:300px; max-width:100%; object-fit:cover; display:inline-block; margin:3px' src='${el}' alt='pic'>`
+        }
+        htmlString+= `  
+                        <div style='border-top:1px solid black;margin-bottom:40px;'>
+                        <h2> ${element.title} </h3>
                         <p> ${element.description} </p> 
-                        <strong> ${element.price} </strong>
+                        <strong style='font-size:18px;'> ${element.price} </strong>
                         <br>
                         <a href='${element.link}'> Povezava do oglasa </a>
                         <br>
-                        <img style='height:300px;' src='${element.imageUrl}' alt='pic'>`
+                        <div style="margin-top:25px; text-align:left">
+                            ${imageString}
+                        </div>
+                        </div>`
     }
 
     const mailOptions = {
-        from: '"Nepremičnine.net Scraper" <domen.sapac420@gmail.com>',
+        from: '"Nepremičnine.net" <domen.sapac420@gmail.com>',
         to: 'domen.sapac10@gmail.com',
-        subject: 'Nov oglas!',
+        subject: 'Najdeni novi oglasi',
         html : htmlString
     }
 
