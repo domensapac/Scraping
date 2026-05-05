@@ -117,6 +117,7 @@ async function scrapeData(){
     }finally {
         await context.close(); 
         transporter.close();
+        await browser.close();
     }
 }
 
