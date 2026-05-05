@@ -25,9 +25,6 @@ async function scrapeData(){
 
     const browser = await chromium.launch({
         headless: true,
-        proxy: {
-            server: '31.15.169.77:808' // Poišči "Slovenia free proxy list"
-        }
     });
     const context = await browser.newContext({
         userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
@@ -37,7 +34,8 @@ async function scrapeData(){
     const page = await context.newPage();
 
     try{
-        await page.goto(mainUrl, { waitUntil: 'load', timeout: 60000 });
+        await page.goto(mainUrl, { waitUntil: 'domcontentloaded'});
+        await page.waitForSelector('.property-box', { timeout: 10000 });
         const title = await page.title();
         console.log("Naslov strani:", title);
 
@@ -56,7 +54,7 @@ async function scrapeData(){
 
         let responses = []; // HTML KODA VSAKEGA POSAMEZNEGA OGLASA
         for(let url of elementUrls){
-            await page.goto(url, { waitUntil: 'load', timeout: 60000 }); 
+            await page.goto(url, { waitUntil: 'domcontentloaded' }); 
             await page.waitForTimeout(Math.floor(Math.random() * 3000) + 2000); // Naključno čakanje 2-5s
             const title = await page.title();
             if (title.includes("Just a moment")) {
