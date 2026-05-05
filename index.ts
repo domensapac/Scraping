@@ -21,7 +21,8 @@ export const supabase = createClient(supabaseUrl, supabaseKey);
 
 async function scrapeData(){
     var mainUrl = "https://www.nepremicnine.net/oglasi-oddaja/podravska/maribor/mb-center,maribor,za-kalvarijo,koroska-vrata/stanovanje/1-sobno,15-sobno,2-sobno,garsonjera/cena-do-500-eur-na-mesec/?nadst%5B0%5D=vsa&nadst%5B1%5D=vsa"; 
-    
+    console.log("Obiskana glavna stran."); 
+
     const browser = await chromium.launch({ headless: true });
 
     const context = await browser.newContext({
@@ -33,6 +34,7 @@ async function scrapeData(){
 
     try{
         await page.goto(mainUrl, { waitUntil: 'load', timeout: 60000 });
+        console.log("Obiskana podstran."); 
         await page.waitForTimeout(5000);
         const wholeData = await page.content();
         const $ = cheerio.load(wholeData); 
