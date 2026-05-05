@@ -143,7 +143,7 @@ async function sendMail(data : any[]){
         }
         htmlString+= `  
                         <div style='border-top:1px solid black;margin-bottom:40px;'>
-                        <h2> ${element.title} </h3>
+                        <h2> ${element.title} </h2>
                         <p> ${element.description} </p> 
                         <strong style='font-size:18px;'> ${element.price} </strong>
                         <br>
