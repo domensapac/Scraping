@@ -3,7 +3,7 @@ name: Nepremicnine.net Scraper
 on:
   schedule:
     - cron: '*/15 * * * *'
-  workflow_dispatch: # Omogoči ročni zagon v GitHub zavihku "Actions"
+  workflow_dispatch: 
 
 jobs:
   scrape:
@@ -30,3 +30,11 @@ jobs:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
           NODEMAILER_PASS: ${{ secrets.NODEMAILER_PASS }}
+
+      - name: Upload Debug Screenshot
+        if: failure() # To se sproži samo, če "Run Scraper" javi napako
+        uses: actions/upload-artifact@v4
+        with:
+          name: scraper-error-screenshot
+          path: error-debug.png # Prepričaj se, da v index.ts shraniš sliko pod tem imenom!
+          retention-days: 3

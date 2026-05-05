@@ -34,8 +34,14 @@ async function scrapeData(){
     const page = await context.newPage();
 
     try{
-        await page.goto(mainUrl, { waitUntil: 'domcontentloaded'});
-        await page.waitForSelector('.property-box', { timeout: 10000 });
+        try {
+            await page.goto(mainUrl, { waitUntil: 'domcontentloaded' });
+            await page.waitForSelector('.property-box', { timeout: 10000 });
+        } catch (error) {
+            console.error("Napaka pri strganju, delam posnetek zaslona...");
+            await page.screenshot({ path: 'error-debug.png', fullPage: true });
+            throw error; 
+        }
         const title = await page.title();
         console.log("Naslov strani:", title);
 
