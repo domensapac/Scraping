@@ -34,7 +34,9 @@ async function scrapeData(){
 
     try{
         await page.goto(mainUrl, { waitUntil: 'load', timeout: 60000 });
-        console.log("Obiskana podstran."); 
+        const title = await page.title();
+        console.log("Naslov strani:", title);
+         
         await page.waitForTimeout(5000);
         const wholeData = await page.content();
         const $ = cheerio.load(wholeData); 
