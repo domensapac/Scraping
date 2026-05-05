@@ -32,7 +32,7 @@ jobs:
           NODEMAILER_PASS: ${{ secrets.NODEMAILER_PASS }}
 
       - name: Upload Debug Screenshot
-        if: failure() # To se sproži samo, če "Run Scraper" javi napako
+        if: always() # To se sproži samo, če "Run Scraper" javi napako
         uses: actions/upload-artifact@v4
         with:
           name: scraper-error-screenshot
