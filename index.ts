@@ -22,14 +22,18 @@ export const supabase = createClient(supabaseUrl, supabaseKey);
 async function scrapeData(){
     var mainUrl = "https://www.nepremicnine.net/oglasi-oddaja/podravska/maribor/mb-center,maribor,za-kalvarijo,koroska-vrata/stanovanje/1-sobno,15-sobno,2-sobno,garsonjera/cena-do-500-eur-na-mesec/?nadst%5B0%5D=vsa&nadst%5B1%5D=vsa"; 
     
-    const context = await chromium.launchPersistentContext('./browser-data', {
-        headless: true, 
+    const browser = await chromium.launch({ headless: true });
+
+    const context = await browser.newContext({
+        userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
+        viewport: { width: 1280, height: 720 }
     });
 
     const page = await context.newPage();
 
     try{
         await page.goto(mainUrl, { waitUntil: 'load', timeout: 60000 });
+        await page.waitForTimeout(5000);
         const wholeData = await page.content();
         const $ = cheerio.load(wholeData); 
 
@@ -45,8 +49,7 @@ async function scrapeData(){
         let responses = []; // HTML KODA VSAKEGA POSAMEZNEGA OGLASA
         for(let url of elementUrls){
             await page.goto(url, { waitUntil: 'load', timeout: 60000 }); 
-
-            
+            await page.waitForTimeout(Math.floor(Math.random() * 3000) + 2000); // Naključno čakanje 2-5s
             const title = await page.title();
             if (title.includes("Just a moment")) {
                 await page.waitForTimeout(30000); 
