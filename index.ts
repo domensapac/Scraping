@@ -157,7 +157,7 @@ async function sendMail(data : any[]){
 
     const mailOptions = {
         from: '"Nepremičnine.net" <domen.sapac420@gmail.com>',
-        to: 'domen.sapac10@gmail.com',
+        to: 'domen.sapac10@gmail.com, potocnik.126@gmail.com',
         subject: 'Najdeni novi oglasi',
         html : htmlString
     }
