@@ -21,27 +21,15 @@ export const supabase = createClient(supabaseUrl, supabaseKey);
 
 async function scrapeData(){
     var mainUrl = "https://www.nepremicnine.net/oglasi-oddaja/podravska/maribor/mb-center,maribor,za-kalvarijo,koroska-vrata/stanovanje/1-sobno,15-sobno,2-sobno,garsonjera/cena-do-500-eur-na-mesec/?nadst%5B0%5D=vsa&nadst%5B1%5D=vsa"; 
-    console.log("Obiskana glavna stran."); 
 
-    const browser = await chromium.launch({
-        headless: true,
-    });
-    const context = await browser.newContext({
-        userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
-        viewport: { width: 1280, height: 720 }
+    const context = await chromium.launchPersistentContext('./browser-data', {
+        headless: true, 
     });
 
     const page = await context.newPage();
 
     try{
-        
-        await page.goto(mainUrl, { waitUntil: 'domcontentloaded' });
-        await page.waitForSelector('.property-box', { timeout: 10000 });
-    
-        const title = await page.title();
-        console.log("Naslov strani:", title);
-
-        await page.waitForTimeout(5000);
+        await page.goto(mainUrl, { waitUntil: 'load', timeout: 60000 });
         const wholeData = await page.content();
         const $ = cheerio.load(wholeData); 
 
@@ -56,8 +44,9 @@ async function scrapeData(){
 
         let responses = []; // HTML KODA VSAKEGA POSAMEZNEGA OGLASA
         for(let url of elementUrls){
-            await page.goto(url, { waitUntil: 'domcontentloaded' }); 
-            await page.waitForTimeout(Math.floor(Math.random() * 3000) + 2000); // Naključno čakanje 2-5s
+            await page.goto(url, { waitUntil: 'load', timeout: 60000 }); 
+
+
             const title = await page.title();
             if (title.includes("Just a moment")) {
                 await page.waitForTimeout(30000); 
@@ -66,7 +55,7 @@ async function scrapeData(){
             const result = await page.content(); 
             responses.push(result); 
         }
-        
+
         let singleData = []; // TU IMAS VSE OGLASE; SHRANIS V OBJEKTE
         let i = 0; 
         for(let element of responses){
@@ -85,11 +74,11 @@ async function scrapeData(){
                 imageUrls : objImageUrls,
                 link : elementUrls[i]
             }
-            
+
             i++; 
             singleData.push(singleObject); 
         }
-    
+
         const fetchedData = await loadData(); 
 
         let newData = []; 
@@ -113,19 +102,16 @@ async function scrapeData(){
         console.log("Novih oglasov: ", newData.length); 
 
         if(newData.length > 0){
-            await insertData(newData); 
+            await insertData(newData); // VSE NOVE VSTAVIS V BAZO
             await sendMail(newData); 
         }
-            
-        
+
+
     }catch(error){
-        console.error("Napaka pri strganju, delam posnetek zaslona...");
-        await page.screenshot({ path: 'error-debug.png', fullPage: true });
-         
+        console.log("Error:", error); 
     }finally {
         await context.close(); 
         transporter.close();
-        await browser.close();
     }
 }
 
@@ -148,7 +134,7 @@ async function loadData(){
 
 async function sendMail(data : any[]){
     let htmlString = '<h2> NOVI OGLASI: !</h2>'; 
-    
+
 
     for(let element of data){
         let imageString = '';
@@ -171,7 +157,7 @@ async function sendMail(data : any[]){
 
     const mailOptions = {
         from: '"Nepremičnine.net" <domen.sapac420@gmail.com>',
-        to: 'domen.sapac10@gmail.com',
+        to: 'domen.sapac10@gmail.com, potocnik.126@gmail.com',
         subject: 'Najdeni novi oglasi',
         html : htmlString
     }
@@ -180,5 +166,3 @@ async function sendMail(data : any[]){
 }
 
 scrapeData();
-
-
