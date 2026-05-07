@@ -34,14 +34,10 @@ async function scrapeData(){
     const page = await context.newPage();
 
     try{
-        try {
-            await page.goto(mainUrl, { waitUntil: 'domcontentloaded' });
-            await page.waitForSelector('.property-box', { timeout: 10000 });
-        } catch (error) {
-            console.error("Napaka pri strganju, delam posnetek zaslona...");
-            await page.screenshot({ path: 'error-debug.png', fullPage: true });
-            throw error; 
-        }
+        
+        await page.goto(mainUrl, { waitUntil: 'domcontentloaded' });
+        await page.waitForSelector('.property-box', { timeout: 10000 });
+    
         const title = await page.title();
         console.log("Naslov strani:", title);
 
@@ -117,13 +113,15 @@ async function scrapeData(){
         console.log("Novih oglasov: ", newData.length); 
 
         if(newData.length > 0){
-            await insertData(newData); // VSE NOVE VSTAVIS V BAZO
+            await insertData(newData); 
             await sendMail(newData); 
         }
             
         
     }catch(error){
-        console.log("Error:", error); 
+        console.error("Napaka pri strganju, delam posnetek zaslona...");
+        await page.screenshot({ path: 'error-debug.png', fullPage: true });
+         
     }finally {
         await context.close(); 
         transporter.close();
